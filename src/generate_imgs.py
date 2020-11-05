@@ -1,15 +1,18 @@
 import os
 import sys
+import math
 import pickle
 import imageio
 import numpy as np
 import xarray as xr
+import matplotlib as mpl
 from pathlib import Path
+import cartopy.crs as ccrs
 from datetime import datetime
 import matplotlib.pyplot as plt
 
 
-def main(start='2000-01', end='2010-01', loc='', data_name='SEA_SURFACE_HEIGHT'):
+def main(start='1995-01', end='2015-01', loc='', data_name='SEA_SURFACE_HEIGHT', field_name='SSH'):
     if not loc:
         loc = Path(
             f'{Path(__file__).resolve().parents[2]}/model_output/{data_name}')
@@ -26,34 +29,57 @@ def main(start='2000-01', end='2010-01', loc='', data_name='SEA_SURFACE_HEIGHT')
     if not os.path.exists(image_output):
         os.makedirs(image_output)
 
-    counter = 0
+    data_max = -math.inf
+    data_min = math.inf
     for datafile in files_to_use:
-        counter += 1
-        if counter < 20:
-            image_name = f'{image_output}{os.path.basename(datafile)[:-2]}png'
-            if not os.path.exists(image_name):
-                fig = plt.figure()
-                ds = xr.open_dataset(datafile)
-                data_var = ds.SSH
+        ds = xr.open_dataset(datafile)
+        data_var = ds[field_name]
 
-                plt.imshow(data_var[0])
-                plt.gca().invert_yaxis()
-                plt.gca().set_axis_off()
-                fig.savefig(image_name, dpi=150,
-                            bbox_inches='tight', pad_inches=0)
+        cur_max = np.nanmax(data_var.values[0])
+        cur_min = np.nanmin(data_var.values[0])
+        if cur_max > data_max:
+            data_max = cur_max
+        if cur_min < data_min:
+            data_min = cur_min
 
-                plt.close()
+    new_long = -180
+    for datafile in files_to_use:
+        image_name = f'{image_output}{os.path.basename(datafile)[:-2]}png'
+        if not os.path.exists(image_name):
+            ds = xr.open_dataset(datafile)
+            data_var = ds[field_name]
+
+            fig = plt.figure(figsize=(10, 10))
+
+            ax = fig.add_subplot(1, 2, 1, projection=ccrs.Orthographic(central_longitude=new_long))
+            cs = ax.imshow(data_var.values[0], transform=ccrs.PlateCarree(), origin='lower')
+            plt.title(f'{ds.time.values[0]}'[:7])
+
+            ax = fig.add_subplot(1, 2, 2, projection=ccrs.Orthographic(central_longitude=new_long))
+            cs = ax.imshow(data_var.values[0], transform=ccrs.PlateCarree(), origin='lower')
+            plt.title(f'{ds.time.values[0]}'[:7])
+
+            cax, _ = mpl.colorbar.make_axes(ax, location='right', fraction=0.046, pad=0.04)
+            mpl.colorbar.ColorbarBase(cax, norm=mpl.colors.Normalize(vmin=data_min, vmax=data_max)) 
+            cs.set_clim(vmin=data_min, vmax=data_max)         
+            fig.savefig(image_name, dpi=50,
+                        bbox_inches='tight', pad_inches=0.1)
+
+            # plt.show()
+            plt.close()
+
+        new_long += 360/len(files_to_use)
+        if new_long > 180:
+            new_long = -180
 
     # Create GIF
     images_to_use = [f for f in os.listdir(image_output) if 'png' in f]
     images_to_use.sort()
     images = []
-    print(images_to_use)
     for img in images_to_use:
         img = f'{image_output}{img}'
-        print(img)
         images.append(imageio.imread(img))
-    imageio.mimsave(f'{image_output}animation.gif', images)
+    imageio.mimsave(f'{image_output}animation.gif', images, duration=0.1, subrectangles=True)
 
 
 if __name__ == "__main__":
