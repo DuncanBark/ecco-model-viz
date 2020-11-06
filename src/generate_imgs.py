@@ -52,16 +52,19 @@ def main(start='1995-01', end='2015-01', loc='', data_name='SEA_SURFACE_HEIGHT',
             fig = plt.figure(figsize=(10, 10))
 
             ax = fig.add_subplot(1, 2, 1, projection=ccrs.Orthographic(central_longitude=new_long))
+            # ax.background_img(name='BM', resolution='low')
             cs = ax.imshow(data_var.values[0], transform=ccrs.PlateCarree(), origin='lower')
             plt.title(f'{ds.time.values[0]}'[:7])
 
             ax = fig.add_subplot(1, 2, 2, projection=ccrs.Orthographic(central_longitude=new_long))
+            # ax.background_img(name='BM', resolution='low')
             cs = ax.imshow(data_var.values[0], transform=ccrs.PlateCarree(), origin='lower')
             plt.title(f'{ds.time.values[0]}'[:7])
 
             cax, _ = mpl.colorbar.make_axes(ax, location='right', fraction=0.046, pad=0.04)
             mpl.colorbar.ColorbarBase(cax, norm=mpl.colors.Normalize(vmin=data_min, vmax=data_max)) 
-            cs.set_clim(vmin=data_min, vmax=data_max)         
+            cs.set_clim(vmin=data_min, vmax=data_max)   
+
             fig.savefig(image_name, dpi=50,
                         bbox_inches='tight', pad_inches=0.1)
 
@@ -79,7 +82,7 @@ def main(start='1995-01', end='2015-01', loc='', data_name='SEA_SURFACE_HEIGHT',
     for img in images_to_use:
         img = f'{image_output}{img}'
         images.append(imageio.imread(img))
-    imageio.mimsave(f'{image_output}animation.gif', images, duration=0.1, subrectangles=True)
+    imageio.mimsave(f'{image_output}animation.gif', images, fps=15, subrectangles=True)
 
 
 if __name__ == "__main__":
