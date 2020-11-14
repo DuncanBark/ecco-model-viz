@@ -56,21 +56,26 @@ def make_screenshots(ecco_files_to_use, ecco_field_name, data_files_to_use, data
             ecco_data_var = ecco_ds[ecco_field_name]
 
             data_ds = xr.open_dataset(data_file)
+
+            if (max(data_ds.coords['Longitude']) > 180):
+                data_ds.coords['Longitude'] = (
+                    data_ds.coords['Longitude'] + 180) % 360 - 180
+                data_ds = data_ds.sortby(data_ds['Longitude'])
+
             data_data_var = data_ds[data_field_name].values.T
-            # data_data_var = data_ds[data_field_name]
 
             fig, axes = plt.subplots(ncols=2, figsize=(15, 15),
                                      subplot_kw={'projection': ccrs.Orthographic(central_longitude=new_long)})
 
-            im = axes[0].imshow(
-                data_data_var, transform=ccrs.PlateCarree(central_longitude=new_long), origin='lower', vmin=global_min, vmax=global_max)
-            axes[0].set_title(data_file[-10:-3])
+            im1 = axes[0].imshow(
+                data_data_var, transform=ccrs.PlateCarree(), origin='lower', vmin=global_min, vmax=global_max)
+            axes[0].set_title(f'DATA\n{data_file[-10:-3]}')
 
-            im = axes[1].imshow(
+            im2 = axes[1].imshow(
                 ecco_data_var.values[0], transform=ccrs.PlateCarree(), origin='lower', vmin=global_min, vmax=global_max)
-            axes[1].set_title(f'{ecco_ds.time.values[0]}'[:7])
+            axes[1].set_title(f'ECCO\n{f"{ecco_ds.time.values[0]}"[:7]}')
 
-            fig.colorbar(im, ax=axes.ravel().tolist(), shrink=0.35)
+            plt.colorbar(im2, ax=axes.ravel().tolist(), shrink=0.35)
 
             fig.savefig(image_name, dpi=50,
                         bbox_inches='tight', pad_inches=0.1)
@@ -182,12 +187,13 @@ def monthly_aggregate(data_loc, dates, date_format, data_time_scale, image_outpu
                 continue
 
             for date in daily_paths.keys():
-                if date[5:7] == month:
-                    files_in_month.append(daily_paths[date])
+                if date[:4] == year and date[5:7] == month:
+                    if daily_paths[date]:
+                        files_in_month.append(daily_paths[date])
 
             data_DA_month = []
 
-            for key, file_path in daily_paths.items():
+            for file_path in files_in_month:
                 if file_path:
                     data_DS = xr.open_dataset(file_path)
                     data_DA = data_DS[data_field_name]
