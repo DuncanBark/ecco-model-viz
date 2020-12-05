@@ -64,18 +64,54 @@ def make_screenshots(ecco_files_to_use, ecco_field_name, data_files_to_use, data
 
             data_data_var = data_ds[data_field_name].values.T
 
-            fig, axes = plt.subplots(ncols=2, figsize=(15, 15),
-                                     subplot_kw={'projection': ccrs.Orthographic(central_longitude=new_long)})
+            # fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(15, 15),
+            #                          subplot_kw={'projection': ccrs.Orthographic(central_longitude=new_long)})
 
-            im1 = axes[0].imshow(
-                data_data_var, transform=ccrs.PlateCarree(), origin='lower', vmin=global_min, vmax=global_max)
-            axes[0].set_title(f'DATA\n{data_file[-10:-3]}')
+            # fig = plt.figure()
 
-            im2 = axes[1].imshow(
-                ecco_data_var.values[0], transform=ccrs.PlateCarree(), origin='lower', vmin=global_min, vmax=global_max)
-            axes[1].set_title(f'ECCO\n{f"{ecco_ds.time.values[0]}"[:7]}')
+            # gs = fig.add_gridspec(2, 2)
+            # f_ax1 = fig.add_subplot(gs[0, 0])
+            # f_ax1.imshow(data_data_var)
+            # f_ax1.set_title(f'DATA\n{data_file[-10:-3]}')
 
-            plt.colorbar(im2, ax=axes.ravel().tolist(), shrink=0.35)
+            # f_ax2 = fig.add_subplot(gs[0, 1])
+            # im2 = f_ax2.imshow(ecco_data_var.values[0])
+            # f_ax2.set_title(f'ECCO\n{f"{ecco_ds.time.values[0]}"[:7]}')
+
+            # im1 = axes[0][0].imshow(
+            #     data_data_var, transform=ccrs.PlateCarree(), origin='lower', vmin=global_min, vmax=global_max)
+            # axes[0].set_title(f'DATA\n{data_file[-10:-3]}')
+
+            # im2 = axes[0][1].imshow(
+            #     ecco_data_var.values[0], transform=ccrs.PlateCarree(), origin='lower', vmin=global_min, vmax=global_max)
+            # axes[1].set_title(f'ECCO\n{f"{ecco_ds.time.values[0]}"[:7]}')
+
+            # plt.colorbar(im2, ax=[f_ax1, f_ax2], shrink=0.35)
+
+            # f_ax3 = fig.add_subplot(gs[1, :])
+            # im2 = f_ax3.imshow(ecco_data_var.values[0])
+            # f_ax3.set_title(f'ECCO\n{f"{ecco_ds.time.values[0]}"[:7]}')
+
+            # plt.show()
+
+            fig = plt.figure(figsize=(15, 15))
+            ax1 = plt.subplot(221, projection=ccrs.Orthographic(
+                central_longitude=new_long))
+            ax1.imshow(data_data_var, transform=ccrs.PlateCarree(),
+                       origin='lower', vmin=global_min, vmax=global_max)
+            ax1.set_title(f'DATA\n{data_file[-10:-3]}')
+
+            ax2 = plt.subplot(222, projection=ccrs.Orthographic(
+                central_longitude=new_long))
+            im2 = ax2.imshow(ecco_data_var.values[0], transform=ccrs.PlateCarree(
+            ), origin='lower', vmin=global_min, vmax=global_max)
+            ax2.set_title(f'ECCO\n{f"{ecco_ds.time.values[0]}"[:7]}')
+
+            ax3 = plt.subplot(212)
+            ax3.plot(np.linspace(-np.pi, np.pi, 100))
+            ax3.set_title(f'Comparison plot')
+
+            plt.colorbar(im2, ax=[ax1, ax2], shrink=.8)
 
             fig.savefig(image_name, dpi=50,
                         bbox_inches='tight', pad_inches=0.1)
@@ -132,9 +168,8 @@ def monthly_aggregate(data_loc, dates, date_format, data_time_scale, image_outpu
                 for i in range(1, 367):
                     dates_in_year.append(str(year) + f'{i:03d}')
             elif date_format == 'yyyymmdd':
-                dates_in_year = \
-                    np.arange(f'{year}-01-01', f'{int(year)+1}-01-01',
-                              dtype='datetime64[D]')
+                dates_in_year = np.arange(f'{year}-01-01', f'{int(year)+1}-01-01',
+                                          dtype='datetime64[D]')
 
         # make empty list that will contain the dates in this year in iso format
         # yyyy-mm-dd
